@@ -4,7 +4,7 @@ body {
   padding: 0;
 }
 body {
-  font: 16px 'Noto Sans';
+  font: 16px 'Noto Sans', sans-serif;
   color: #ccc;
   background: #000;
 }
