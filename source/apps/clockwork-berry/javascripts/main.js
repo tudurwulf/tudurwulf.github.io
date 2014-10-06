@@ -2,58 +2,54 @@
   'use strict';
 
   var timeoutID,
-      state, // fresh | playing | inTimeout | stopped
+      state, // fresh | playing | paused | stopped
 
       totalStart,
       playStart,
-      timeoutStart,
+      pauseStart,
       lapStart,
       ckpStart,
 
       playSum,
-      timeoutSum,
+      pauseSum,
       lapSum,
       ckpSum,
 
-      timeoutNo,
+      pauseNo,
       lapNo,
       ckpNo,
 
+      lapCancelled,
+
       $total,
       $play,
-      $timeout,
+      $pause,
       $ratio,
       $lap,
       $ckp,
       $stats,
-      $statsBody;
+      $statsBody,
+      $revStatsOrder;
 
   function init() {
-    state = 'fresh';
 
-    playSum    =
-    timeoutSum =
-    lapSum     =
-    ckpSum     = 0;
-
-    timeoutNo =
-    lapNo     =
-    ckpNo     = 0;
+    resetState();
 
     $total = $('#total').find('dd');
     $play = $('#play').find('dd');
-    $timeout = $('#timeout').find('dd');
+    $pause = $('#pause').find('dd');
     $ratio = $('#ratio');
     $lap = $('#lap').find('dd');
     $ckp = $('#ckp').find('dd');
     $stats = $('#stats');
     $statsBody = $stats.find('tbody');
+    $revStatsOrder = $('#revStatsOrder');
 
     // Bind keys
     $(doc).keydown(function(e) {
       switch (e.which) {
         case 32: // SPACE
-          playTimeout();
+          playPause();
           return false;
         case  9: // TAB
           recCkp();
@@ -71,7 +67,23 @@
     $('#stopResetButton').mousedown(stopReset);
     $('#lapButton').mousedown(recLap);
     $('#ckpButton').mousedown(recCkp);
-    $('#playTimeoutButton').mousedown(playTimeout);
+    $('#playPauseButton').mousedown(playPause);
+    $revStatsOrder.click(revStatsOrder);
+  }
+
+  function resetState() {
+    playSum  =
+    pauseSum =
+    lapSum   =
+    ckpSum   = 0;
+
+    pauseNo =
+    lapNo   =
+    ckpNo   = 0;
+
+    lapCancelled = false;
+
+    state = 'fresh';
   }
 
   function run() {
@@ -79,54 +91,64 @@
     timeoutID = setTimeout(run, 100);
   }
 
-  function updateTimers(now, printStats, tEvent, tEventNo) {
+  function updateTimers(now, tEventName, tEventNo) {
     var total,
         fTotal,
         play,
         fPlay,
-        timeout,
-        fTimeout,
+        pause,
+        fPause,
         lap,
         fLap,
         ckp,
         fCkp,
-        timestamp;
+        timestamp,
+        tEvent,
+        row;
 
     if (state == 'playing') {
       total = now - totalStart;
       play = now - playStart + playSum;
-      timeout = timeoutSum;
+      pause = pauseSum;
       lap = now - lapStart + lapSum;
       ckp = now - ckpStart + ckpSum;
-    } else if (state == 'inTimeout') {
+    } else if (state == 'paused') {
       total = now - totalStart;
       play = playSum;
-      timeout = now - timeoutStart + timeoutSum;
+      pause = now - pauseStart + pauseSum;
       lap = lapSum;
       ckp = ckpSum;
     } else if (state == 'fresh') {
-      total = play = timeout = lap = ckp = 0;
+      total = play = pause = lap = ckp = 0;
     }
 
     fTotal = formatTime(total);
     fPlay = formatTime(play);
-    fTimeout = formatTime(timeout);
+    fPause = formatTime(pause);
     fLap = formatTime(lap);
     fCkp = formatTime(ckp);
 
     $total.html( fTotal.slice(0, -2) );
     $play.html( fPlay.slice(0, -2) );
-    // Remove decimals and set document title
-    // NOTE When a tab is out of focus setTimeout is called only once a second,
-    //      thus displaying decimals in the document title wouldn't make sense.
+
+    // Remove decimals and set playtime as document title so it will be visible
+    // in the browser's tabbar and desktop environment's taskbar
+    //
+    // NOTE
+    //   When a tab is out of focus, setTimeout is called only once per second;
+    //   thus, displaying decimals in the document title would make the app
+    //   seem broken.
     doc.title = fPlay.slice(0, -4);
-    $timeout.html( fTimeout.slice(0, -2) );
+
+    $pause.html( fPause.slice(0, -2) );
+
     // The `|| 100` is needed only for the first run, when `total` can be 0.
     $ratio.html(Math.round( (play * 100 / total) || 100 ) + '%');
+
     $lap.html( fLap.slice(0, -2) );
     $ckp.html( fCkp.slice(0, -2) );
 
-    if (printStats) {
+    if (tEventName) {
 
       timestamp =          now.getFullYear()                 + '-' +
                   ( '0'  + now.getMonth()        ).slice(-2) + '-' +
@@ -137,20 +159,33 @@
                   ( '0'  + now.getSeconds()      ).slice(-2) + '.' +
                   ( '00' + now.getMilliseconds() ).slice(-3);
 
-      $statsBody.append(
-        '<tr class=' + tEvent + '>' +
-          '<td>' + timestamp + '</td>' +
-          '<td>' + tEvent + (tEventNo ? ' ' + tEventNo : '') + '</td>' +
-          '<td>' + fCkp + '</td>' +
-          '<td>' + fLap + '</td>' +
-          '<td>' + fPlay + '</td>' +
-          '<td>' + fTimeout + '</td>' +
-          '<td>' + fTotal + '</td>' +
-        '</tr>'
-      );
+      // If this is the last event and at least one lap was recorded, then
+      // print 'LAP # / STOP' rather than just 'STOP'
+      if (tEventName == 'STOP' && lapNo > 0)
+        tEvent = 'LAP ' + (++lapNo) + ' / STOP';
+      else
+        tEvent = tEventName + (tEventNo ? ' ' + tEventNo : '');
+
+      row = '<tr class=' + tEventName + '>' +
+              '<td>' + timestamp + '</td>' +
+              '<td>' + tEvent + '</td>' +
+              '<td>' + fCkp + '</td>' +
+              '<td>' + fLap + '</td>' +
+              '<td>' + fPlay + '</td>' +
+              '<td>' + fPause + '</td>' +
+              '<td>' + fTotal + '</td>' +
+            '</tr>';
+
+      // If paused, then insert a checkpoint or lap below the pause row
+      if (state == 'paused' && (tEventName == 'CHECKPOINT' || tEventName == 'LAP'))
+        $statsBody.find('tr:first').after(row);
+      // Otherwise, insert the row at the very top
+      else
+        $statsBody.prepend(row);
     }
   }
 
+  // 4160527 -> 1:09:20.527
   function formatTime(ms) {
     var h, m, s;
 
@@ -168,7 +203,7 @@
     return h + ':' + m + ':' + s;
   }
 
-  function playTimeout() {
+  function playPause() {
     if (state == 'stopped') return;
 
     var now = new Date();
@@ -177,34 +212,34 @@
 
       totalStart = playStart = lapStart = ckpStart = now;
 
-      $stats.css('display', 'table');
-      updateTimers(now, true, 'START');
+      $stats.css('visibility', 'visible');
+      updateTimers(now, 'PLAY');
 
       state = 'playing';
 
     } else if (state == 'playing') {
 
       clearTimeout(timeoutID);
-      updateTimers(now, true, 'TIMEOUT', ++timeoutNo);
+      updateTimers(now, 'PAUSE', ++pauseNo);
 
       playSum += now - playStart;
       lapSum += now - lapStart;
       ckpSum += now - ckpStart;
 
-      timeoutStart = now;
+      pauseStart = now;
 
-      state = 'inTimeout';
+      state = 'paused';
 
-    } else if (state == 'inTimeout') {
+    } else if (state == 'paused') {
 
       clearTimeout(timeoutID);
-      updateTimers(now, true, 'PLAY');
+      updateTimers(now, 'PLAY');
 
-      timeoutSum += now - timeoutStart;
-
+      pauseSum += now - pauseStart;
       playStart = lapStart = ckpStart = now;
-      state = 'playing';
+      lapCancelled = false;
 
+      state = 'playing';
     }
 
     run();
@@ -213,15 +248,15 @@
   function recCkp() {
     if (
       (state == 'fresh' || state == 'stopped') ||
-      (state == 'inTimeout' && ckpSum === 0)
+      (state == 'paused' && ckpSum === 0)
     ) return;
 
     var now = new Date();
 
     if (state == 'playing')
-      updateTimers(now, true, 'CHECKPOINT', ++ckpNo);
-    else if (state == 'inTimeout')
-      updateTimers(timeoutStart, true, 'CHECKPOINT', ++ckpNo);
+      updateTimers(now, 'CHECKPOINT', ++ckpNo);
+    else if (state == 'paused')
+      updateTimers(pauseStart, 'CHECKPOINT', ++ckpNo);
 
     ckpSum = 0;
     ckpStart = now;
@@ -231,15 +266,36 @@
   function recLap() {
     if (
       (state == 'fresh' || state == 'stopped') ||
-      (state == 'inTimeout' && lapSum === 0)
+      (lapCancelled === true)
     ) return;
 
     var now = new Date();
 
-    if (state == 'playing')
-      updateTimers(now, true, 'LAP', ++lapNo);
-    else if (state == 'inTimeout')
-      updateTimers(timeoutStart, true, 'LAP', ++lapNo);
+    if (state == 'playing') {
+
+      updateTimers(now, 'LAP', ++lapNo);
+
+    // If paused and no and no lap was recorded during this time, then record a
+    // lap with the pause's timestamp
+    } else if (state == 'paused' && lapSum > 0) {
+
+      // If a checkpoint was recorded during pause, then remove it. (It wouldn't
+      // make sense to have a checkpoint and a lap with the same timestamp.)
+      if (ckpSum === 0)
+
+        // The row will be located after the last pause event, thus the 2nd
+        // row from top
+        $statsBody.find('tr:nth-child(2)').remove();
+
+      updateTimers(pauseStart, 'LAP', ++lapNo);
+
+    // If paused and a lap was already recorded during this time, then cancel it
+    } else if (state == 'paused' && lapSum === 0) {
+
+      lapNo--;
+      $statsBody.find('tr:nth-child(2)').addClass('cancelled');
+      lapCancelled = true;
+    }
 
     lapSum = ckpSum = 0;
     lapStart = ckpStart = now;
@@ -250,37 +306,41 @@
   function stopReset() {
     var now = new Date();
 
-    if (state == 'playing' || state == 'inTimeout') {
+    if (state == 'playing' || state == 'paused') {
 
       clearTimeout(timeoutID);
-      updateTimers(now, true, 'FINISH');
+      updateTimers(now, 'STOP');
+
+      $revStatsOrder.css('visibility', 'visible');
 
       state = 'stopped';
 
     } else if (state == 'stopped') {
 
-      $total.html(   '0:00:00.0' );
-      $play.html(    '0:00:00.0' );
-      doc.title =    '0:00:00'    ;
-      $timeout.html( '0:00:00.0' );
-      $ratio.html(   '100%'      );
-      $lap.html(     '0:00:00.0' );
-      $ckp.html(     '0:00:00.0' );
+      $total.html( '0:00:00.0' );
+      $play.html(  '0:00:00.0' );
+      doc.title =  '0:00:00'    ;
+      $pause.html( '0:00:00.0' );
+      $ratio.html( '100%'      );
+      $lap.html(   '0:00:00.0' );
+      $ckp.html(   '0:00:00.0' );
 
+      $revStatsOrder.css('visibility', 'hidden');
+      $stats.css('visibility', 'hidden');
       $statsBody.empty();
-      $stats.css('display', 'none');
 
-      playSum    =
-      timeoutSum =
-      lapSum     =
-      ckpSum     = 0;
+      resetState();
+    }
+  }
 
-      timeoutNo =
-      lapNo     =
-      ckpNo     = 0;
+  // Reverses the row order of statistics (ORDER BY timestamp ASC/DESC)
+  function revStatsOrder() {
+    var rows = $statsBody.find('tr').get();
 
-      state = 'fresh';
+    $statsBody.empty();
 
+    for (var i = rows.length - 1; i >= 0; i--) {
+      $statsBody.append(rows[i]);
     }
   }
 
