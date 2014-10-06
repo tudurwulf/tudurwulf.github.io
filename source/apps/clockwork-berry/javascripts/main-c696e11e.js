@@ -160,9 +160,10 @@
                   ( '00' + now.getMilliseconds() ).slice(-3);
 
       // If this is the last event and at least one lap was recorded, then
-      // print 'LAP # / STOP' rather than just 'STOP'
+      // print 'LAP #' rather than 'STOP'. Note that the row's class remains
+      // 'STOP', so its colour will be green rather than red.
       if (tEventName == 'STOP' && lapNo > 0)
-        tEvent = 'LAP ' + (++lapNo) + ' / STOP';
+        tEvent = 'LAP ' + (++lapNo);
       else
         tEvent = tEventName + (tEventNo ? ' ' + tEventNo : '');
 
@@ -177,7 +178,7 @@
             '</tr>';
 
       // If paused, then insert a checkpoint or lap below the pause row
-      if (state == 'paused' && (tEventName == 'CHECKPOINT' || tEventName == 'LAP'))
+      if (state == 'paused' && (tEventName == 'CKP' || tEventName == 'LAP'))
         $statsBody.find('tr:first').after(row);
       // Otherwise, insert the row at the very top
       else
@@ -254,9 +255,9 @@
     var now = new Date();
 
     if (state == 'playing')
-      updateTimers(now, 'CHECKPOINT', ++ckpNo);
+      updateTimers(now, 'CKP', ++ckpNo);
     else if (state == 'paused')
-      updateTimers(pauseStart, 'CHECKPOINT', ++ckpNo);
+      updateTimers(pauseStart, 'CKP', ++ckpNo);
 
     ckpSum = 0;
     ckpStart = now;

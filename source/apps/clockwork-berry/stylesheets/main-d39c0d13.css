@@ -179,7 +179,7 @@ dd {
 #stats > tbody > tr.LAP {
   color: #e6194c;
 }
-#stats > tbody > tr.CHECKPOINT {
+#stats > tbody > tr.CKP {
   color: #f5993d;
 }
 #stats > tbody > tr.cancelled {
