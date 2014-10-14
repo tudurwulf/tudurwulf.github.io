@@ -166,7 +166,8 @@ dd {
   color: #000;
   background: #14b84b;
 }
-#stats > tbody > tr.STOP {
+#stats > tbody > tr.START,
+#stats > tbody > tr.FINISH {
   color: #14b84b;
 }
 #stats > tbody > tr.PLAY {

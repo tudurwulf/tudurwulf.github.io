@@ -103,7 +103,6 @@
         ckp,
         fCkp,
         timestamp,
-        tEvent,
         row;
 
     if (state == 'playing') {
@@ -159,17 +158,9 @@
                   ( '0'  + now.getSeconds()      ).slice(-2) + '.' +
                   ( '00' + now.getMilliseconds() ).slice(-3);
 
-      // If this is the last event and at least one lap was recorded, then
-      // print 'LAP #' rather than 'STOP'. Note that the row's class remains
-      // 'STOP', so its colour will be green rather than red.
-      if (tEventName == 'STOP' && lapNo > 0)
-        tEvent = 'LAP ' + (++lapNo);
-      else
-        tEvent = tEventName + (tEventNo ? ' ' + tEventNo : '');
-
       row = '<tr class=' + tEventName + '>' +
               '<td>' + timestamp + '</td>' +
-              '<td>' + tEvent + '</td>' +
+              '<td>' + tEventName + (tEventNo ? ' ' + tEventNo : '') + '</td>' +
               '<td>' + fCkp + '</td>' +
               '<td>' + fLap + '</td>' +
               '<td>' + fPlay + '</td>' +
@@ -214,7 +205,7 @@
       totalStart = playStart = lapStart = ckpStart = now;
 
       $stats.css('visibility', 'visible');
-      updateTimers(now, 'PLAY');
+      updateTimers(now, 'START');
 
       state = 'playing';
 
@@ -310,7 +301,7 @@
     if (state == 'playing' || state == 'paused') {
 
       clearTimeout(timeoutID);
-      updateTimers(now, 'STOP');
+      updateTimers(now, 'FINISH');
 
       $revStatsOrder.css('visibility', 'visible');
 
