@@ -32,17 +32,24 @@
       $revStatsOrder;
 
   function init() {
+    var $timers,
+        $buttons;
 
     resetState();
 
-    $total = $('#total').find('dd');
-    $play = $('#play').find('dd');
-    $pause = $('#pause').find('dd');
-    $ratio = $('#ratio');
-    $lap = $('#lap').find('dd');
-    $ckp = $('#ckp').find('dd');
+    $timers = $('#timers');
+    $buttons = $('#buttons');
+
+    $total = $timers.find('#total').find('dd');
+    $play = $timers.find('#play').find('dd');
+    $pause = $timers.find('#pause').find('dd');
+    $ratio = $timers.find('#ratio');
+    $lap = $timers.find('#lap').find('dd');
+    $ckp = $timers.find('#ckp').find('dd');
+
     $stats = $('#stats');
     $statsBody = $stats.find('tbody');
+
     $revStatsOrder = $('#revStatsOrder');
 
     // Bind keys
@@ -64,10 +71,10 @@
     });
 
     // Bind buttons
-    $('#stopResetButton').mousedown(stopReset);
-    $('#lapButton').mousedown(recLap);
-    $('#ckpButton').mousedown(recCkp);
-    $('#playPauseButton').mousedown(playPause);
+    $buttons.find('#stopReset').mousedown(stopReset);
+    $buttons.find('#lap').mousedown(recLap);
+    $buttons.find('#ckp').mousedown(recCkp);
+    $buttons.find('#playPause').mousedown(playPause);
     $revStatsOrder.click(revStatsOrder);
   }
 
@@ -160,7 +167,8 @@
 
       row = '<tr class=' + tEventName + '>' +
               '<td>' + timestamp + '</td>' +
-              '<td>' + tEventName + (tEventNo ? ' ' + tEventNo : '') + '</td>' +
+              '<td>' +  tEventName.toUpperCase() +
+                        (tEventNo ? ' ' + tEventNo : '') + '</td>' +
               '<td>' + fCkp + '</td>' +
               '<td>' + fLap + '</td>' +
               '<td>' + fPlay + '</td>' +
@@ -169,7 +177,7 @@
             '</tr>';
 
       // If paused, then insert a checkpoint or lap below the pause row
-      if (state == 'paused' && (tEventName == 'CKP' || tEventName == 'LAP'))
+      if (state == 'paused' && (tEventName == 'ckp' || tEventName == 'lap'))
         $statsBody.find('tr:first').after(row);
       // Otherwise, insert the row at the very top
       else
@@ -205,14 +213,14 @@
       totalStart = playStart = lapStart = ckpStart = now;
 
       $stats.css('visibility', 'visible');
-      updateTimers(now, 'START');
+      updateTimers(now, 'start');
 
       state = 'playing';
 
     } else if (state == 'playing') {
 
       clearTimeout(timeoutID);
-      updateTimers(now, 'PAUSE', ++pauseNo);
+      updateTimers(now, 'pause', ++pauseNo);
 
       playSum += now - playStart;
       lapSum += now - lapStart;
@@ -225,7 +233,7 @@
     } else if (state == 'paused') {
 
       clearTimeout(timeoutID);
-      updateTimers(now, 'PLAY');
+      updateTimers(now, 'play');
 
       pauseSum += now - pauseStart;
       playStart = lapStart = ckpStart = now;
@@ -246,9 +254,9 @@
     var now = new Date();
 
     if (state == 'playing')
-      updateTimers(now, 'CKP', ++ckpNo);
+      updateTimers(now, 'ckp', ++ckpNo);
     else if (state == 'paused')
-      updateTimers(pauseStart, 'CKP', ++ckpNo);
+      updateTimers(pauseStart, 'ckp', ++ckpNo);
 
     ckpSum = 0;
     ckpStart = now;
@@ -265,7 +273,7 @@
 
     if (state == 'playing') {
 
-      updateTimers(now, 'LAP', ++lapNo);
+      updateTimers(now, 'lap', ++lapNo);
 
     // If paused and no and no lap was recorded during this time, then record a
     // lap with the pause's timestamp
@@ -279,7 +287,7 @@
         // row from top
         $statsBody.find('tr:nth-child(2)').remove();
 
-      updateTimers(pauseStart, 'LAP', ++lapNo);
+      updateTimers(pauseStart, 'lap', ++lapNo);
 
     // If paused and a lap was already recorded during this time, then cancel it
     } else if (state == 'paused' && lapSum === 0) {
@@ -301,7 +309,7 @@
     if (state == 'playing' || state == 'paused') {
 
       clearTimeout(timeoutID);
-      updateTimers(now, 'FINISH');
+      updateTimers(now, 'finish');
 
       $revStatsOrder.css('visibility', 'visible');
 

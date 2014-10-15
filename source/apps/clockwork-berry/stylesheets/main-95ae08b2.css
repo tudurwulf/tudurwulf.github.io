@@ -13,70 +13,73 @@ body {
   color: #e6e6e6;
   background: #750f8a;
 }
-dl {
+#timers {
+  margin-top: 2em;
+}
+#timers dl {
   margin: 0;
 }
-dt {
+#timers dt {
   font-size: 1.1em;
   text-align: center;
   font-weight: bold;
   line-height: 1;
 }
-dd {
+#timers dd {
   padding: 0.1em 0.2em 0.15em;
   margin: 0;
   text-align: center;
   line-height: 1;
 }
-#total {
-  margin: 2em auto 0;
+#timers #total {
+  margin: 0 auto;
   color: #14b84b;
 }
-#total dd {
+#timers #total dd {
   font-size: 4em;
 }
-#playPause {
+#timers #playPause {
   display: table;
   margin: 2em auto 0;
   white-space: nowrap;
   color: #197fe6;
 }
-#playPause dl,
-#playPause div {
+#timers #playPause dl,
+#timers #playPause div {
   display: inline-block;
 }
-#playPause dt {
+#timers #playPause dt {
   margin-bottom: 0.7em;
 }
-#play dd {
+#timers #play dd {
   font-size: 3.3em;
   border: 0.09em solid #197fe6;
   border-radius: 0.4em;
 }
-#pause dd {
+#timers #pause dd {
   font-size: 3.3em;
   color: #000;
   border: 0.09em solid #197fe6;
   border-radius: 0.4em;
   background: #197fe6;
 }
-#ratio {
+#timers #ratio {
   font-size: 3.3em;
   width: 4em;
   text-align: center;
 }
-#lap {
+#timers #lap {
   margin: 2em auto 0;
   color: #e6194c;
 }
-#lap dd {
+#timers #lap dd {
   font-size: 3.2em;
 }
-#ckp {
+#timers #ckp {
   margin: 2em auto 0;
   color: #f5993d;
 }
-#ckp dd {
+#timers #ckp dd {
   font-size: 2.7em;
 }
 #buttons {
@@ -101,35 +104,35 @@ dd {
   -webkit-user-select: none;
   -ms-user-select: none;
 }
-#stopResetButton {
+#buttons #stopReset {
   border-color: #14b84b;
   color: #14b84b;
 }
-#stopResetButton:hover {
+#buttons #stopReset:hover {
   background: #14b84b;
   color: #000;
 }
-#lapButton {
+#buttons #lap {
   border-color: #e6194c;
   color: #e6194c;
 }
-#lapButton:hover {
+#buttons #lap:hover {
   background: #e6194c;
   color: #000;
 }
-#ckpButton {
+#buttons #ckp {
   border-color: #f5993d;
   color: #f5993d;
 }
-#ckpButton:hover {
+#buttons #ckp:hover {
   background: #f5993d;
   color: #000;
 }
-#playPauseButton {
+#buttons #playPause {
   border-color: #197fe6;
   color: #197fe6;
 }
-#playPauseButton:hover {
+#buttons #playPause:hover {
   background: #197fe6;
   color: #000;
 }
@@ -159,30 +162,47 @@ dd {
 #stats td {
   text-align: right;
 }
-#stats > tbody > tr > td:nth-child(2) {
+#stats th {
+  color: #14b84b;
+  border: 2px solid #14b84b;
+}
+#stats #ckp {
+  color: #f5993d;
+  border: 2px solid #f5993d;
+}
+#stats #lap {
+  color: #e6194c;
+  border: 2px solid #e6194c;
+}
+#stats #play {
+  color: #197fe6;
+  border: 2px solid #197fe6;
+}
+#stats #pause {
+  color: #000;
+  border: 2px solid #197fe6;
+  background: #197fe6;
+}
+#stats td:nth-child(2) {
   text-align: left;
 }
-#stats > thead > tr {
-  color: #000;
-  background: #14b84b;
-}
-#stats > tbody > tr.START,
-#stats > tbody > tr.FINISH {
+#stats tr.start,
+#stats tr.finish {
   color: #14b84b;
 }
-#stats > tbody > tr.PLAY {
+#stats tr.play {
   color: #197fe6;
 }
-#stats > tbody > tr.PAUSE {
+#stats tr.pause {
   color: #000;
   background: #197fe6;
 }
-#stats > tbody > tr.LAP {
+#stats tr.lap {
   color: #e6194c;
 }
-#stats > tbody > tr.CKP {
+#stats tr.ckp {
   color: #f5993d;
 }
-#stats > tbody > tr.cancelled {
+#stats tr.cancelled {
   text-decoration: line-through;
 }
